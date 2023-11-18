@@ -1,8 +1,25 @@
 #include <iostream>
 #include <stack>
 #include <vector>
+#include <ctime>
+#include <cstdlib>
+#include <random>
+#include <algorithm>
 
+// 設定 TEST 為 1 啟動自動測試
+// 此時須設定測試迷宮的大小，也就是 ROWS 及 COLS
+// TEST_LOOP 則是設定每次測試幾個迷宮
 #define TEST		1
+#if TEST
+    #define ROWS        6
+    #define COLS        6
+    #define TEST_LOOP   1
+#else   // No TEST, force one shot
+    #define TEST_LOOP   1
+#endif
+
+#define ROAD            0
+#define WALL            1
 
 using namespace std;
 
@@ -31,10 +48,12 @@ bool findPath(vector<vector<int> >& maze, int startRow, int startCol, int exitRo
     visited[startRow][startCol] = 1;
 
     path.push_back(Position(startRow, startCol));
+    path.push_back(Position(startRow, startCol));
 
     while (!s.empty() && !found) {
         Position cur = s.top();
         s.pop();
+        path.pop_back();
 
         int curRow = cur.row;
         int curCol = cur.col;
@@ -43,10 +62,13 @@ bool findPath(vector<vector<int> >& maze, int startRow, int startCol, int exitRo
 #if TEST
         cout << "  ##  Current ==  " << "r = " << curRow << " c = " << curCol << " d = " << i << endl;	
 #endif
-        
+
+        int newRow = curRow;
+        int newCol = curCol;
+
         while ((i < 4) && !found) {
-            int newRow = curRow + _move[i].vert;
-            int newCol = curCol + _move[i].horiz;
+            newRow = curRow + _move[i].vert;
+            newCol = curCol + _move[i].horiz;
 
 			if ((newRow < 0) || (newCol < 0) || (newRow == numRows) || (newCol == numCols)) {
 			    i++;
@@ -54,7 +76,7 @@ bool findPath(vector<vector<int> >& maze, int startRow, int startCol, int exitRo
 			}
 
 #if TEST
-            cout << "    --> r = " << newRow << " c = " << newCol << " d = " << i << endl;	//
+            //cout << "    --> r = " << newRow << " c = " << newCol << " d = " << i << endl;	//
 #endif
             if (newRow == (exitRow) &&
                 newCol == (exitCol)) {
@@ -79,16 +101,14 @@ bool findPath(vector<vector<int> >& maze, int startRow, int startCol, int exitRo
         if (i == 4) {
             // 如果無法前進，則退回上一步
             visited[curRow][curCol] = 2;  // 標記為已訪問過但無通路
-            //path.pop_back();
         }
     }
-    
-//    cout << "  ----> s size = " << s.size() << endl;
-//    cout << "  ----> path size = " << path.size() << endl;
     
     if (found) {
         // 找到出口，輸出通路
         cout << "Path Found:" << endl;
+        cout << "  ----> s size = " << s.size() << endl;
+        cout << "  ----> path size = " << path.size() << endl;
         
         vector<Position>::iterator it;
         
@@ -98,19 +118,6 @@ bool findPath(vector<vector<int> >& maze, int startRow, int startCol, int exitRo
             	cout << " -> ";
 		}
 		cout << endl;
-        /*
-        while (!s.empty()) {
-            path.push(s.top());
-            s.pop();
-        }
-        path.push(Position(exitRow, exitCol));
-
-        while (!path.empty()) {
-            Position pos = path.top();
-            cout << "(" << pos.row << ", " << pos.col << ")" << " -> ";
-            path.pop();
-    	}
-    	*/ 
         //cout << "(" << exitRow << ", " << exitCol << ")" << endl;
         return true;
     }
@@ -119,6 +126,7 @@ bool findPath(vector<vector<int> >& maze, int startRow, int startCol, int exitRo
     return false;
 }
 
+// 顯示迷宮長相
 void show_maze(vector<vector<int> > m)
 {
 	vector<vector<int> >::iterator it_i;
@@ -131,8 +139,36 @@ void show_maze(vector<vector<int> > m)
 	}
 }
 
-int main() {
-    int numRows=5, numCols=5;
+// 設定迷宮路徑
+int f()
+{
+    int n = rand() & 0x03;  // 路徑:牆壁 <=> 3:1
+
+    if (n)
+        return ROAD;   // 路徑
+    else
+        return WALL;   // 牆壁
+}
+
+// 產生隨機迷宮
+void random_maze(vector<vector<int> >& m, int rows, int cols)
+{
+    vector<int> test(rows*cols);
+ 
+    generate(test.begin(), test.end(), f);
+    int k=0;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            m[i][j] = test[k++];
+        }
+    }
+    m[0][0] = 0;
+    m[rows-1][cols-1] = 0;
+}
+
+int main()
+{
+    int numRows=ROWS, numCols=COLS;
     
 #if !TEST	
     cout << "Enter the number of rows in the maze: ";
@@ -153,17 +189,18 @@ int main() {
 #endif
     
 #if TEST
-    //maze[0][1] = 1; 	//
-    maze[0][2] = 1;		//
-    maze[1][0] = 1;		//
-    maze[1][2] = 1;		//
-    maze[2][0] = 1;		//
-    maze[2][3] = 1;		//
-    maze[3][2] = 1;		//
-    show_maze(maze);	//
+    srand(time(0));
 #endif
 
-    int startRow=0, startCol=0, exitRow=numRows-1, exitCol=numCols-1;
+    for (int l=0; l<TEST_LOOP; l++) {
+#if TEST
+        cout << "===================================================" << endl;
+        cout << l << ". " << endl;
+        random_maze(maze, numRows, numCols);
+        show_maze(maze);	//
+#endif
+
+        int startRow=0, startCol=0, exitRow=numRows-1, exitCol=numCols-1;
 #if !TEST	
     cout << "Enter the starting row and column: ";
     cin >> startRow >> startCol;
@@ -171,10 +208,11 @@ int main() {
     cin >> exitRow >> exitCol;
 #endif
 
-    if (findPath(maze, startRow, startCol, exitRow, exitCol)) {
-        cout << "Path Found!" << endl;
-    } else {
-        cout << "No Path Found." << endl;
+        if (findPath(maze, startRow, startCol, exitRow, exitCol)) {
+            cout << "Path Found!" << endl;
+        } else {
+            cout << "No Path Found." << endl;
+        }
     }
 
     return 0;
