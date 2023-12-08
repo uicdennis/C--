@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "MLTable": "yaml",
+        "vector": "cpp",
+        "xutility": "cpp",
+        "utility": "cpp"
+    }
+}
