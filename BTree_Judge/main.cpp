@@ -75,6 +75,54 @@ public:
         // 如果沒有割點且橋的數量等於或小於1，則圖是雙連通的
         return count(disc.begin(), disc.end(), 0) == 0 && bridges.size() <= 1;
     }
+
+    void findArticulationPoints(int u, vector<int>& disc, vector<int>& low, vector<int>& parent, vector<bool>& isArticulation) {
+        int children = 0; // 子節點計數
+
+        disc[u] = low[u] = ++time; // 初始化發現時間和最早祖先時間
+
+        for (int v : adj[u]) {
+            if (!disc[v]) {
+                children++;
+                parent[v] = u;
+
+                findArticulationPoints(v, disc, low, parent, isArticulation);
+
+                low[u] = min(low[u], low[v]);
+
+                // 檢查割點條件
+                if ((parent[u] == -1 && children > 1) || (parent[u] != -1 && low[v] >= disc[u])) {
+                    isArticulation[u] = true;
+                }
+            } else if (v != parent[u]) {
+                // 更新最早祖先時間
+                low[u] = min(low[u], disc[v]);
+            }
+        }
+    }
+
+    vector<int> getArticulationPoints() {
+        vector<int> disc(_count, 0); // 發現時間
+        vector<int> low(_count, 0);  // 最早祖先時間
+        vector<int> parent(_count, -1); // DFS樹中的父節點
+        vector<bool> isArticulation(_count, false); // 是否為割點
+
+        // 從每個未被訪問的節點開始DFS
+        for (int i = 0; i < _count; ++i) {
+            if (!disc[i]) {
+                findArticulationPoints(i, disc, low, parent, isArticulation);
+            }
+        }
+
+        vector<int> articulationPoints;
+        for (int i = 0; i < _count; ++i) {
+            if (isArticulation[i]) {
+                articulationPoints.push_back(i);
+            }
+        }
+
+        return articulationPoints;
+    }
 };
 
 int main()
@@ -100,18 +148,40 @@ int main()
         g.addEdge(node_list[2*i], node_list[2*i+1]);
     }
 
-    if (g.isBiconnected()) {
+    vector<int> articulationPoints = g.getArticulationPoints();
+
+    if (!articulationPoints.size()) {
         cout << "true";
     } else {
+        int i=0;
+
+        sort(articulationPoints.begin(), articulationPoints.end());
         cout << "false" << endl;
-        for (int i=g.break_point.size(); i>0; i--) {
-            if (i > 1)
-                cout << g.break_point[i-1] << " ";
+        for (auto x : articulationPoints) {
+            if (i++ != articulationPoints.size())
+                cout << x << " ";
             else
-                cout << g.break_point[i-1];
+                cout << x;
         }
         cout << endl;
     }
+
+    // if (g.isBiconnected() && !g.break_point.size()) {
+    //     cout << "true";
+    // } else {
+    //     int i=0;
+
+    //     sort(g.break_point.begin(), g.break_point.end());
+    //     cout << "false" << endl;
+    //     // for (int i=g.break_point.size(); i>0; i--) {
+    //     for (auto x : g.break_point) {
+    //         if (i++ != g.break_point.size())
+    //             cout << x << " ";
+    //         else
+    //             cout << x;
+    //     }
+    //     cout << endl;
+    // }
 
     return 0;
 }
